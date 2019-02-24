@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
 using System.Threading.Tasks;
 using KafkaTjek.Tests.Extensions;
 using NUnit.Framework;
@@ -20,7 +21,7 @@ namespace KafkaTjek.Tests
             _consumer = new KafkaConsumer(
                 address: "localhost:9092",
                 topics: new[] { "test-topic" },
-                group: "default4",
+                group: "default5",
                 eventHandler: async evt => receivedEvents.Enqueue(evt.Body)
             );
 
@@ -29,6 +30,8 @@ namespace KafkaTjek.Tests
             _consumer.Start();
 
             await receivedEvents.WaitOrDie(q => q.Count == 3, timeoutSeconds: 7);
+
+            await Task.Delay(TimeSpan.FromSeconds(5));
         }
     }
 }

@@ -27,6 +27,8 @@ namespace KafkaTjek
                 GroupId = group,
 
                 AutoOffsetReset = AutoOffsetReset.Earliest,
+                AutoCommitIntervalMs = 2000,
+                EnableAutoCommit = true
             };
 
             _consumer = new ConsumerBuilder<string, string>(consumerConfig)

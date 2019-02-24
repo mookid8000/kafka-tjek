@@ -30,7 +30,7 @@ namespace KafkaTjek.Internals
         public static void OffsetsCommitted<T1, T2>(ILogger logger, IConsumer<T1, T2> producer, CommittedOffsets committedOffsets)
         {
             var offsetsByTopic = committedOffsets.Offsets.GroupBy(o => o.Topic)
-                .Select(g => new { Topic = g.Key, Offsets = g.Select(o => new { Partition = o.Partition.Value, Offsets = o.Offset.Value }) });
+                .Select(g => new { Topic = g.Key, Offsets = g.Select(o => $"{o.Partition.Value}={o.Offset.Value}") });
 
             logger.Verbose("Committed offsets: {@offsets}", offsetsByTopic);
         }
