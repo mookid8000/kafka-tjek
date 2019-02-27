@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,6 +10,27 @@ namespace KafkaTjek.Tests.Extensions
 {
     static class TestExtensions
     {
+        public static IEnumerable<IReadOnlyCollection<T>> Batch<T>(this IEnumerable<T> items, int batchSize)
+        {
+            var list = new List<T>(batchSize);
+
+            foreach (var item in items)
+            {
+                list.Add(item);
+
+                if (list.Count < batchSize) continue;
+
+                yield return list.ToArray();
+             
+                list.Clear();
+            }
+
+            if (list.Any())
+            {
+                yield return list.ToArray();
+            }
+        }
+
         public static async Task WaitOrDie<T>(this ConcurrentQueue<T> queue,
             Expression<Func<ConcurrentQueue<T>, bool>> completionExpression, int timeoutSeconds = 5)
         {
