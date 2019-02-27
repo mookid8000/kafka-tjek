@@ -14,6 +14,7 @@ namespace KafkaTjek
     {
         static readonly ILogger Logger = Log.ForContext<KafkaProducer>();
         static readonly Headers EmptyHeaders = new Headers();
+        static readonly object EmptyResult = new object();
 
         readonly Producer<string, string> _producer;
         readonly int _sendTimeoutSeconds;
@@ -46,6 +47,7 @@ namespace KafkaTjek
                 _producer.BeginProduce(topic, message);
             }
 
+            // is disposed in the finally block on the thread pool
             var cancellationTokenSource = new CancellationTokenSource();
 
             cancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(_sendTimeoutSeconds));
@@ -58,15 +60,7 @@ namespace KafkaTjek
                 {
                     _producer.Flush(cancellationToken);
 
-                    if (!cancellationToken.IsCancellationRequested)
-                    {
-                        taskCompletionSource.SetResult(null);
-                    }
-                    else
-                    {
-                        taskCompletionSource.SetException(
-                            new TimeoutException($"Could not send events within {_sendTimeoutSeconds} s timeout"));
-                    }
+                    taskCompletionSource.SetResult(EmptyResult);
                 }
                 catch (OperationCanceledException exception) when (cancellationToken.IsCancellationRequested)
                 {

@@ -1,24 +1,28 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Confluent.Kafka;
 using Serilog;
 using static KafkaTjek.Internals.Handlers;
+// ReSharper disable RedundantAnonymousTypePropertyName
 
 namespace KafkaTjek
 {
     public class KafkaConsumer : IDisposable
     {
-        readonly Func<KafkaEvent, Task> _eventHandler;
         static readonly ILogger Logger = Log.ForContext<KafkaConsumer>();
         readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
+        readonly string _group;
+        readonly Func<KafkaEvent, Task> _eventHandler;
         readonly Consumer<string, string> _consumer;
         readonly Thread _worker;
 
         public KafkaConsumer(string address, IEnumerable<string> topics, string group, Func<KafkaEvent, Task> eventHandler)
         {
+            _group = group ?? throw new ArgumentNullException(nameof(@group));
             _eventHandler = eventHandler ?? throw new ArgumentNullException(nameof(eventHandler));
 
             var consumerConfig = new ConsumerConfig
@@ -38,7 +42,11 @@ namespace KafkaTjek
                 .SetOffsetsCommittedHandler((consumer, committedOffsets) => OffsetsCommitted(Logger, consumer, committedOffsets))
                 .Build();
 
-            foreach (var topic in topics)
+            var topicsToSubscribeTo = new HashSet<string>(topics);
+
+            Logger.Information("Kafka consumer for group {consumerGroup} subscribing to topics: {@topics}", _group, topicsToSubscribeTo);
+
+            foreach (var topic in topicsToSubscribeTo)
             {
                 _consumer.Subscribe(topic);
             }
@@ -59,7 +67,7 @@ namespace KafkaTjek
         {
             var cancellationToken = _cancellationTokenSource.Token;
 
-            Logger.Information("Starting Kafka consumer worker");
+            Logger.Information("Starting Kafka consumer worker for group {consumerGroup}", _group);
 
             try
             {
@@ -75,7 +83,9 @@ namespace KafkaTjek
                             GetHeaders(consumeResult.Headers)
                         );
 
-                        Logger.Verbose("Received event: {@event}", kafkaEvent);
+                        var topf = consumeResult.TopicPartitionOffset;
+                        
+                        Logger.Verbose("Received event: {@event} - {@position}", kafkaEvent, new { Topic = topf.Topic, Offset = $"{topf.Partition.Value}/{topf.Offset.Value}" });
 
                         _eventHandler(kafkaEvent).Wait(cancellationToken);
                     }
@@ -108,7 +118,7 @@ namespace KafkaTjek
             }
             finally
             {
-                Logger.Information("Kafka consumer worker stopped");
+                Logger.Information("Kafka consumer worker for group {consumerGroup} stopped", _group);
             }
         }
 

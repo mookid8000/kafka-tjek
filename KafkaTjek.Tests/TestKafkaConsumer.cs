@@ -4,6 +4,9 @@ using System.Threading.Tasks;
 using KafkaTjek.Tests.Extensions;
 using NUnit.Framework;
 // ReSharper disable ArgumentsStyleAnonymousFunction
+// ReSharper disable ArgumentsStyleStringLiteral
+// ReSharper disable ArgumentsStyleOther
+// ReSharper disable ArgumentsStyleLiteral
 #pragma warning disable 1998
 
 namespace KafkaTjek.Tests
@@ -21,7 +24,7 @@ namespace KafkaTjek.Tests
             _consumer = new KafkaConsumer(
                 address: "localhost:9092",
                 topics: new[] { "test-topic" },
-                group: "default5",
+                group: "default3",
                 eventHandler: async evt => receivedEvents.Enqueue(evt.Body)
             );
 

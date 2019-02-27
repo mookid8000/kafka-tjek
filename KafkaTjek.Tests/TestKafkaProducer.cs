@@ -1,6 +1,5 @@
 ﻿using System.Threading.Tasks;
 using NUnit.Framework;
-using Serilog;
 
 namespace KafkaTjek.Tests
 {
